@@ -12,7 +12,7 @@ namespace AsyncNetworking
     class Program
     {
 
-        static HttpClient client = new HttpClient();
+        static Networking networkClient;
 
         static void Main(string[] args)
         {
@@ -23,14 +23,11 @@ namespace AsyncNetworking
             // 4. http://www.mocky.io
             // 5. https://www.mockable.io
 
-            client.BaseAddress = new Uri("http://www.fakeresponse.com/api/");
-            //client.BaseAddress = new Uri("http://localhost:7654/");
-            client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            networkClient = new Networking("http://www.fakeresponse.com/api");
 
             RunCalls();
 
-            Console.ReadKey();
+            Console.ReadLine();
 
         }
 
@@ -40,7 +37,7 @@ namespace AsyncNetworking
 
             // If we use 'await' here, then the application will wait until we get the response back from the API.
             // Currently, it continues on (the await inside of 'GetRequestAsync' will wait for the response to come back). 
-            var helloMsg = GetRequestAsync("?data={%22Hello%22:%22World%22}&sleep=5&status=500")
+            var helloMsg = networkClient.GetRequestAsync("?data={%22Hello%22:%22World%22}&sleep=5&status=500")
                             .ContinueWith(callback =>
                                 {
                                     Console.WriteLine($"Result = {callback.Result}");
@@ -49,37 +46,6 @@ namespace AsyncNetworking
             Console.WriteLine("Ending RunCalls()...");
         }
 
-        static async Task<string> GetRequestAsync(string url)
-        {
-
-            return await Policy.Handle<HttpRequestException>()
-                .WaitAndRetryAsync(5, retryAttempt =>
-
-                    // Exponential backoff.
-                    TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
-
-                    // Log everytime Polly catches an exception.
-                    (exception, timeSpan) => {
-
-                        Console.WriteLine($"Polly caught an error -> {exception}. Retrying in {timeSpan.Seconds} secs.");
-                        url = "?data={%22Hello%22:%22World%22}";
-
-                    }
-                )
-                // Execute the following code asynchronously, catching exceptions as they come in.
-                // TODO - Add checks for specific HTTP response codes.
-                .ExecuteAsync(async () =>
-                {
-
-                    HttpResponseMessage response = await client.GetAsync(url);
-
-                    // Specify that we should throw an exception for any HTTP response that falls outside of 2XX-3XX.
-                    response.EnsureSuccessStatusCode();
-
-                    return await response.Content.ReadAsStringAsync();
-
-                });
-
-        }
+        
     }
 }
