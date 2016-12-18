@@ -35,12 +35,21 @@ namespace AsyncNetworking
         {
             Console.WriteLine("Starting RunCalls()...");
 
+            Console.WriteLine("Starting Task1...");
+            var task1 = networkClient.GetRequestAsync("?data={%22name%22:%22task1%22}&sleep=30&status=200")
+                                     .ContinueWith(callback =>
+                                     {
+                                         Console.WriteLine($"Result (Task1) = {callback.Result}");
+                                     });
+
             // If we use 'await' here, then the application will wait until we get the response back from the API.
             // Currently, it continues on (the await inside of 'GetRequestAsync' will wait for the response to come back). 
-            var helloMsg = networkClient.GetRequestAsync("?data={%22Hello%22:%22World%22}&sleep=5&status=500")
+
+            Console.WriteLine("Starting Task2...");
+            var task2 = networkClient.GetRequestAsync("?data={%22Hello%22:%22World%22}&sleep=5&status=500")
                             .ContinueWith(callback =>
                                 {
-                                    Console.WriteLine($"Result = {callback.Result}");
+                                    Console.WriteLine($"Result (Task2) = {callback.Result}");
                                 });
 
             Console.WriteLine("Ending RunCalls()...");

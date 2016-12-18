@@ -35,7 +35,7 @@ namespace AsyncNetworking
             HttpResponseMessage response = await client.GetAsync(url);
 
             // Specify that we should throw an exception for any HTTP response that falls outside of 2XX-3XX.
-            //response.EnsureSuccessStatusCode();
+            response.EnsureSuccessStatusCode();
 
             return response;
 
