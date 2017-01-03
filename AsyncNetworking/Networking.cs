@@ -28,6 +28,8 @@ namespace AsyncNetworking
             //client.BaseAddress = new Uri("http://localhost:7654/");
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            client.Timeout = TimeSpan.FromSeconds(120);
         }
 
         public async Task<HttpResponseMessage> MakeRequestAsync(string url)
@@ -44,8 +46,10 @@ namespace AsyncNetworking
         public async Task<string> GetRequestAsync(string url)
         {
 
+            Console.WriteLine($"GetRequestAsync() - {url}");
+
             return await Policy.Handle<HttpRequestException>()
-                .WaitAndRetryAsync(5, retryAttempt =>
+                        .WaitAndRetryAsync(5, retryAttempt =>
 
                     // Exponential backoff.
                     TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
@@ -54,7 +58,7 @@ namespace AsyncNetworking
                     (exception, timeSpan) => {
 
                         Console.WriteLine($"Polly caught an error -> {exception}. Retrying in {timeSpan.Seconds} secs.");
-                        url = "?data={%22Hello%22:%22World%22}";
+                        //url = "?data={%22Hello%22:%22World%22}";
 
                     }
                 )

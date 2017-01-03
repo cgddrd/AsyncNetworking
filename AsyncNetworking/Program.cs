@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AsyncNetworking
@@ -25,9 +26,41 @@ namespace AsyncNetworking
 
             networkClient = new Networking("http://www.fakeresponse.com/api");
 
-            RunCalls();
+            Task.Factory.StartNew(RunHistoricalUploads, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+
+            //RunCalls();
+
+            RunWatcher();
 
             Console.ReadLine();
+
+        }
+
+        static void RunHistoricalUploads()
+        {
+
+            Console.WriteLine("Beginning historical uploads.");
+
+            var random = new Random();
+
+            for (int i=0; i<10; i++) 
+            {
+                var sleepTime = random.Next(0, 2) == 1 ? random.Next(0, 20) : 0;
+                //var sleepTime = random.Next(0, 20);
+                //var sleepTime = 0;
+
+                Console.WriteLine($"Beginning historical upload: {i} (sleep time = {sleepTime} secs).");
+
+                networkClient.GetRequestAsync($"?data={{%22name%22:%22upload{i}%22}}&sleep={sleepTime}&status=200")
+                                    .ContinueWith(callback =>
+                                     {
+                                         Console.WriteLine($"Completed historical upload: {i}.");
+                                     });
+
+            }
+
+
+            Console.WriteLine("Completed historical uploads.");
 
         }
 
@@ -36,7 +69,7 @@ namespace AsyncNetworking
             Console.WriteLine("Starting RunCalls()...");
 
             Console.WriteLine("Starting Task1...");
-            var task1 = networkClient.GetRequestAsync("?data={%22name%22:%22task1%22}&sleep=30&status=200")
+            var task1 = networkClient.GetRequestAsync("?data={%22name%22:%22task1%22}&sleep=10&status=200&meta=false")
                                      .ContinueWith(callback =>
                                      {
                                          Console.WriteLine($"Result (Task1) = {callback.Result}");
@@ -46,13 +79,40 @@ namespace AsyncNetworking
             // Currently, it continues on (the await inside of 'GetRequestAsync' will wait for the response to come back). 
 
             Console.WriteLine("Starting Task2...");
-            var task2 = networkClient.GetRequestAsync("?data={%22Hello%22:%22World%22}&sleep=5&status=500")
+            var task2 = networkClient.GetRequestAsync("?data={%22name%22:%22task2%22}&sleep=0&status=200&meta=false")
                             .ContinueWith(callback =>
                                 {
                                     Console.WriteLine($"Result (Task2) = {callback.Result}");
                                 });
 
             Console.WriteLine("Ending RunCalls()...");
+        }
+
+        static void RunWatcher()
+        {
+            var random = new Random();
+            int jobNo = 1;
+
+            while(true)
+            {
+
+                var sleep = random.Next(0, 20000);
+                Console.WriteLine($"Waiting for {TimeSpan.FromMilliseconds(sleep).Seconds} secs...");
+                Thread.Sleep(sleep);
+
+                Console.WriteLine($"Beginning watcher job no: {jobNo}.");
+
+                var task2 = networkClient.GetRequestAsync($"?data={{%22name%22:%22job{jobNo}%22}}&sleep=0&status=200&meta=false")
+                            .ContinueWith(callback =>
+                            {
+                                Console.WriteLine($"Result Job No: {jobNo}.");
+                            });
+
+                //Console.WriteLine($"Finished watcher job no: {jobNo}.");
+
+                jobNo++;
+
+            }
         }
 
         
